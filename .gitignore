@@ -1,0 +1,4 @@
+.venv/
+.packages/
+__pycache__/
+.notebook-runtime/

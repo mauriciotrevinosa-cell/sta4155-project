@@ -1,0 +1,1137 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<title>STA 4155 Group Project Report</title><style>
+@page { size: letter; margin: 1in; }
+body { font-family: 'Times New Roman', Georgia, serif; font-size: 12pt; line-height: 2;
+       max-width: 6.5in; margin: 0 auto; color: #111; background: #fff; }
+h1 { font-size: 18pt; text-align: center; line-height: 1.3; margin-bottom: 0; }
+h2 { font-size: 14pt; border-bottom: 1px solid #999; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; margin-bottom: 0; page-break-after: avoid; }
+p { margin: 0 0 0.6em 0; text-align: justify; }
+.center { text-align: center; }
+.title-page { text-align: center; page-break-after: always; padding-top: 1.5in; }
+.eq { text-align: center; font-style: italic; margin: 0.4em 0; }
+table.tbl { border-collapse: collapse; font-size: 9.5pt; line-height: 1.25; margin: 0.6em auto;
+            page-break-inside: avoid; }
+table.tbl th, table.tbl td { padding: 2px 7px; border-bottom: 1px solid #ccc; text-align: right; }
+table.tbl th { border-bottom: 1.5px solid #333; }
+table.tbl tbody th { text-align: left; font-weight: normal; }
+table.members td, table.members th { border: 1px solid #555; padding: 4px 18px; line-height: 1.4; }
+table.members { border-collapse: collapse; margin: 1em auto; font-size: 11pt; }
+.caption { font-size: 10pt; text-align: center; line-height: 1.3; margin-bottom: 1em; }
+img { display: block; max-width: 100%; margin: 0.5em auto 0.2em auto; page-break-inside: avoid; }
+pre { font-family: Consolas, 'Courier New', monospace; font-size: 7.6pt; line-height: 1.2;
+      background: #f6f6f6; padding: 6px; white-space: pre; overflow-x: auto; page-break-inside: avoid; }
+.box { border: 1px solid #999; padding: 4px 12px; margin: 0.8em 0; line-height: 1.6; }
+.appendix { page-break-before: always; }
+</style></head>
+<body><div class="title-page">
+<h1>Regression Analysis of Fire Damage<br>and Executive Salaries</h1>
+<p class="center">STA 4155 &mdash; Group Project<br>Baruch College</p>
+<p class="center" style="margin-top:0.6in"><b>Group members and contribution</b></p>
+<table class="members">
+<tr><th>Member</th><th>Assigned part</th><th>Contribution (%)</th></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+</table>
+<p class="center" style="font-size:10pt">All numerical results were produced with Python
+(pandas, statsmodels, SciPy, matplotlib). The code is submitted separately (analysis.py).</p>
+</div><h2>Executive Summary</h2>
+<p><b>Study 1.</b> Fire damage increases strongly and linearly with the distance between the
+house and the nearest fire station (r = 0.961). Each additional mile is associated with an
+estimated increase of <b>$4,919</b> in average damage (95% CI $4,071
+to $5,768). Distance explains 92.3% of the variation
+in damage, and the regression assumptions are reasonably satisfied.</p>
+<p><b>Study 2.</b> Of the ten candidate predictors, only experience (X1), education (X2), bonus
+eligibility (X3), employees supervised (X4) and corporate assets (X5) are related to log salary
+once the others are controlled for; board membership, age, profits, international responsibility
+and sales add nothing (partial F = 0.53, p = 0.756). The final model adds a
+diminishing-returns term for experience and a bonus &times; supervision interaction. It explains
+94.0% of the variation in log salary (adjusted R&sup2; = 0.936)
+and has the smallest cross-validated prediction error of the models compared.</p><h2>1. Study 1: Fire Damage and Distance to the Fire Station</h2>
+<h3>1.1 Objective and data</h3>
+<p>An insurance company wants to know whether, and how strongly, the damage from major residential
+fires is related to the distance from the burning house to the nearest fire station. The sample
+contains n = 15 recent fires; the response is <i>damage</i> (thousands of dollars) and the
+explanatory variable is <i>distance</i> (miles). There are no missing values.</p>
+<table class="dataframe tbl">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>count</th>
+      <th>mean</th>
+      <th>std</th>
+      <th>min</th>
+      <th>25%</th>
+      <th>50%</th>
+      <th>75%</th>
+      <th>max</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>DISTANCE</th>
+      <td>15.00</td>
+      <td>3.28</td>
+      <td>1.58</td>
+      <td>0.70</td>
+      <td>2.20</td>
+      <td>3.10</td>
+      <td>4.45</td>
+      <td>6.10</td>
+    </tr>
+    <tr>
+      <th>DAMAGE</th>
+      <td>15.00</td>
+      <td>26.41</td>
+      <td>8.07</td>
+      <td>14.10</td>
+      <td>20.95</td>
+      <td>26.10</td>
+      <td>31.30</td>
+      <td>43.20</td>
+    </tr>
+  </tbody>
+</table>
+<p class="caption">Table 1. Descriptive statistics, Fires data.</p>
+<h3>1.2 Exploratory analysis</h3>
+<p>The scatterplot (Figure 1) shows a strong, positive, linear association with no visible
+curvature and no obvious outliers. The sample correlation is <b>r = 0.9610</b>
+(p &lt; 0.001), so a straight-line model is appropriate. Distances range from
+0.7 to 6.1 miles; conclusions apply only within this range.</p>
+<img src="figures/fig1_fires_fit.png" style="width:5.6in">
+<p class="caption">Figure 1. Least-squares line with 95% confidence band for mean damage
+(dark) and 95% prediction band for an individual fire (light).</p>
+<h3>1.3 Least-squares regression model</h3>
+<p>The model is Damage = &beta;<sub>0</sub> + &beta;<sub>1</sub>Distance + &epsilon;, with
+&epsilon; ~ N(0, &sigma;&sup2;) independent. The fitted line is</p>
+<p class="eq">Damage&#770; = 10.278 + 4.919 &times; Distance</p>
+<table class="dataframe tbl">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Estimate</th>
+      <th>Std. Error</th>
+      <th>t value</th>
+      <th>Pr(&gt;|t|)</th>
+      <th>95% CI low</th>
+      <th>95% CI high</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>Intercept</th>
+      <td>10.2779</td>
+      <td>1.4203</td>
+      <td>7.2366</td>
+      <td>0.0000</td>
+      <td>7.2096</td>
+      <td>13.3463</td>
+    </tr>
+    <tr>
+      <th>DISTANCE</th>
+      <td>4.9193</td>
+      <td>0.3927</td>
+      <td>12.5254</td>
+      <td>0.0000</td>
+      <td>4.0709</td>
+      <td>5.7678</td>
+    </tr>
+  </tbody>
+</table>
+<p class="caption">Table 2. Coefficient estimates, Study 1.</p>
+<p><b>Slope.</b> For each additional mile from the fire station, average fire damage increases by
+an estimated 4.919 thousand dollars (about $4,919). <b>Intercept.</b> The estimate
+10.278 would be the average damage for a fire at zero distance; because the closest fire in the
+sample was 0.7 miles away, it is a slight extrapolation and should be read as
+the baseline damage that occurs regardless of distance. The residual standard error is
+s<sub>e</sub> = 2.316 thousand dollars.</p>
+<h3>1.4 Inference about the slope and model fit</h3>
+<p>To test H<sub>0</sub>: &beta;<sub>1</sub> = 0 against H<sub>a</sub>: &beta;<sub>1</sub> &ne; 0,
+t = 12.525 with 13 df (p &lt; 0.001).
+We reject H<sub>0</sub>: distance is a significant linear predictor of damage. The 95% confidence
+interval for &beta;<sub>1</sub> is (4.071, 5.768) thousand
+dollars per mile; it excludes zero. The ANOVA F statistic (156.89) equals t&sup2;, as
+expected in simple regression. The coefficient of determination is
+<b>R&sup2; = 0.9235</b> (= r&sup2;): 92.3% of the variability in fire
+damage is explained by its linear relationship with distance.</p>
+<table class="dataframe tbl">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>df</th>
+      <th>Sum Sq</th>
+      <th>Mean Sq</th>
+      <th>F value</th>
+      <th>Pr(&gt;F)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>Regression</th>
+      <td>1.0000</td>
+      <td>841.7664</td>
+      <td>841.7664</td>
+      <td>156.8862</td>
+      <td>0.0000</td>
+    </tr>
+    <tr>
+      <th>Residual</th>
+      <td>13.0000</td>
+      <td>69.7510</td>
+      <td>5.3655</td>
+      <td></td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>Total</th>
+      <td>14.0000</td>
+      <td>911.5173</td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>
+  </tbody>
+</table>
+<p class="caption">Table 3. Analysis of variance, Study 1.</p>
+<h3>1.5 Checking the assumptions</h3>
+<img src="figures/fig2_fires_diagnostics.png" style="width:6.2in">
+<p class="caption">Figure 2. Residual plots for the fire damage model.</p>
+<p><b>Linearity and constant variance.</b> The residuals vs fitted values (Figure 2a) scatter
+randomly around zero with no curve or funnel shape. The Breusch&ndash;Pagan test does not detect
+non-constant variance (LM = 0.182, p = 0.670).
+<b>Normality.</b> The points in the normal Q-Q plot (Figure 2c) lie close to the line, and the
+Shapiro&ndash;Wilk test does not reject normality (W = 0.9467, p = 0.474).
+<b>Independence.</b> The fires were sampled from different houses, which supports independence.
+As a check, the Durbin&ndash;Watson statistic is d = 1.318; with n = 15 and one predictor the 5%
+bounds are d<sub>L</sub> = 1.08 and d<sub>U</sub> = 1.36, so the test is
+inconclusive.
+Because the file order is not a time order, this is a weak concern; Figure 2b shows no
+systematic pattern.</p>
+<p><b>Unusual observations.</b> No studentized residual exceeds &plusmn;2, so there are no outliers. Fire
+13 has high leverage
+(h &gt; 2(k+1)/n = 0.267) because it lies at the extremes
+of distance. The most influential point is fire 13 (distance 6.1 mi,
+damage 43.2), with Cook's D = 0.471, well below 1. Refitting
+without it gives slope 4.584 and R&sup2; = 0.905,
+so the conclusions do not depend on this fire. No observations were removed.</p>
+<h3>1.6 Estimation and prediction</h3>
+<p>Table 4 gives 95% confidence intervals for the mean damage and 95% prediction intervals for the
+damage of a single new fire at several distances. For example, for a house
+3.5 miles from the station, the estimated mean damage is $27,496;
+we are 95% confident the <i>average</i> damage of all such fires is between
+$26,190 and $28,801, while the damage of
+<i>one</i> such fire is predicted to fall between $22,324 and
+$32,667. Prediction intervals are wider because they include the variability of
+an individual fire around the mean. Intervals are narrowest near the mean distance
+(3.28 mi) and should not be extended beyond 0.7&ndash;6.1 miles.</p>
+<table class="dataframe tbl">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Predicted damage</th>
+      <th>CI mean low</th>
+      <th>CI mean high</th>
+      <th>PI low</th>
+      <th>PI high</th>
+    </tr>
+    <tr>
+      <th>Distance (mi)</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>1.0</th>
+      <td>15.20</td>
+      <td>12.87</td>
+      <td>17.52</td>
+      <td>9.68</td>
+      <td>20.72</td>
+    </tr>
+    <tr>
+      <th>2.0</th>
+      <td>20.12</td>
+      <td>18.43</td>
+      <td>21.80</td>
+      <td>14.84</td>
+      <td>25.40</td>
+    </tr>
+    <tr>
+      <th>3.5</th>
+      <td>27.50</td>
+      <td>26.19</td>
+      <td>28.80</td>
+      <td>22.32</td>
+      <td>32.67</td>
+    </tr>
+    <tr>
+      <th>5.0</th>
+      <td>34.87</td>
+      <td>32.93</td>
+      <td>36.82</td>
+      <td>29.50</td>
+      <td>40.24</td>
+    </tr>
+    <tr>
+      <th>6.0</th>
+      <td>39.79</td>
+      <td>37.15</td>
+      <td>42.44</td>
+      <td>34.13</td>
+      <td>45.45</td>
+    </tr>
+  </tbody>
+</table>
+<p class="caption">Table 4. Estimated mean damage and individual predictions (thousands of dollars).</p>
+<h3>1.7 Conclusions for Study 1</h3>
+<p>There is very strong evidence of a positive linear association between distance to the nearest
+fire station and fire damage. The model is simple, fits well and satisfies its assumptions, so it is
+useful for the insurer's pricing decisions within the observed range of distances. Because the data
+are observational, the result shows association, not causation: houses far from stations may also
+differ in size, construction or response times for other reasons. The sample (15 fires from one
+suburb) is small and may not generalize to other areas.</p><h2>2. Study 2: Executive Salaries</h2>
+<h3>2.1 Objective and data</h3>
+<p>The goal is to find which of ten firm and executive characteristics are associated with
+executive salary, and to build a model that predicts salary well. Following the consulting
+company's practice, the response is Y = ln(Salary). The sample has n = 100 executives and no
+missing values. X3, X6 and X9 are 0/1 indicator (dummy) variables; the rest are quantitative.
+The ID column is only an identifier and is not used.</p>
+<table class="dataframe tbl">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>mean</th>
+      <th>std</th>
+      <th>min</th>
+      <th>50%</th>
+      <th>max</th>
+    </tr>
+    <tr>
+      <th>Variable</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>ln(Salary)</th>
+      <td>11.46</td>
+      <td>0.26</td>
+      <td>10.66</td>
+      <td>11.46</td>
+      <td>12.06</td>
+    </tr>
+    <tr>
+      <th>Experience (yrs)</th>
+      <td>13.08</td>
+      <td>7.34</td>
+      <td>1.00</td>
+      <td>13.00</td>
+      <td>26.00</td>
+    </tr>
+    <tr>
+      <th>Education (yrs)</th>
+      <td>16.02</td>
+      <td>2.30</td>
+      <td>12.00</td>
+      <td>16.00</td>
+      <td>20.00</td>
+    </tr>
+    <tr>
+      <th>Bonus eligible</th>
+      <td>0.66</td>
+      <td>0.48</td>
+      <td>0.00</td>
+      <td>1.00</td>
+      <td>1.00</td>
+    </tr>
+    <tr>
+      <th>Employees supervised</th>
+      <td>340.10</td>
+      <td>167.18</td>
+      <td>60.00</td>
+      <td>360.00</td>
+      <td>600.00</td>
+    </tr>
+    <tr>
+      <th>Corporate assets ($M)</th>
+      <td>175.10</td>
+      <td>15.41</td>
+      <td>150.00</td>
+      <td>180.00</td>
+      <td>200.00</td>
+    </tr>
+    <tr>
+      <th>Board member</th>
+      <td>0.49</td>
+      <td>0.50</td>
+      <td>0.00</td>
+      <td>0.00</td>
+      <td>1.00</td>
+    </tr>
+    <tr>
+      <th>Age (yrs)</th>
+      <td>42.84</td>
+      <td>9.07</td>
+      <td>23.00</td>
+      <td>42.50</td>
+      <td>64.00</td>
+    </tr>
+    <tr>
+      <th>Company profits ($M)</th>
+      <td>7.70</td>
+      <td>1.55</td>
+      <td>5.00</td>
+      <td>8.00</td>
+      <td>10.00</td>
+    </tr>
+    <tr>
+      <th>International resp.</th>
+      <td>0.18</td>
+      <td>0.39</td>
+      <td>0.00</td>
+      <td>0.00</td>
+      <td>1.00</td>
+    </tr>
+    <tr>
+      <th>Company sales ($M)</th>
+      <td>24.83</td>
+      <td>2.74</td>
+      <td>20.00</td>
+      <td>25.00</td>
+      <td>30.00</td>
+    </tr>
+  </tbody>
+</table>
+<p class="caption">Table 5. Descriptive statistics, Salaries data.</p>
+<h3>2.2 Exploratory analysis</h3>
+<p>Log salary is most strongly correlated with experience (r = 0.79) and age
+(r = 0.63), followed by bonus eligibility (r = 0.40) and
+education, employees supervised and assets (r &asymp; 0.2). Experience and age are highly correlated
+with each other (r = 0.77), so they carry overlapping information; the
+other predictors are nearly uncorrelated with one another (Figure 3). Board membership,
+profits, international responsibility and sales show almost no marginal association with
+salary (Figure 4).</p>
+<img src="figures/fig3_salaries_correlation.png" style="width:4.8in">
+<p class="caption">Figure 3. Pairwise correlations.</p>
+<img src="figures/fig4_salaries_pairs.png" style="width:6.5in">
+<p class="caption">Figure 4. Log salary versus each candidate predictor (red line: simple LS fit;
+boxplots for indicator variables).</p>
+<h3>2.3 Full first-order model</h3>
+<p>We first fit Y = &beta;<sub>0</sub> + &beta;<sub>1</sub>X1 + &hellip; + &beta;<sub>10</sub>X10 + &epsilon;.
+The global F-test of H<sub>0</sub>: &beta;<sub>1</sub> = &hellip; = &beta;<sub>10</sub> = 0 gives
+F = 106.54 on 10 and 89 df (p &lt; 0.001), so at
+least one predictor is useful. R&sup2; = 0.9229 and adjusted R&sup2; = 0.9142.
+The individual t-tests (Table 6) show that X1, X2, X3, X4, X5 are significant at &alpha; = 0.05, while
+X6, X7, X8, X9, X10 are not.</p>
+<table class="dataframe tbl">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Estimate</th>
+      <th>Std. Error</th>
+      <th>t value</th>
+      <th>Pr(&gt;|t|)</th>
+      <th>95% CI low</th>
+      <th>95% CI high</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>Intercept</th>
+      <td>10.0219</td>
+      <td>0.1481</td>
+      <td>67.6921</td>
+      <td>0.0000</td>
+      <td>9.7277</td>
+      <td>10.3161</td>
+    </tr>
+    <tr>
+      <th>X1</th>
+      <td>0.0279</td>
+      <td>0.0018</td>
+      <td>15.7453</td>
+      <td>0.0000</td>
+      <td>0.0244</td>
+      <td>0.0314</td>
+    </tr>
+    <tr>
+      <th>X2</th>
+      <td>0.0290</td>
+      <td>0.0034</td>
+      <td>8.4753</td>
+      <td>0.0000</td>
+      <td>0.0222</td>
+      <td>0.0358</td>
+    </tr>
+    <tr>
+      <th>X3</th>
+      <td>0.2243</td>
+      <td>0.0171</td>
+      <td>13.1350</td>
+      <td>0.0000</td>
+      <td>0.1904</td>
+      <td>0.2583</td>
+    </tr>
+    <tr>
+      <th>X4</th>
+      <td>0.0005</td>
+      <td>0.0000</td>
+      <td>10.4432</td>
+      <td>0.0000</td>
+      <td>0.0004</td>
+      <td>0.0006</td>
+    </tr>
+    <tr>
+      <th>X5</th>
+      <td>0.0020</td>
+      <td>0.0005</td>
+      <td>3.9011</td>
+      <td>0.0002</td>
+      <td>0.0010</td>
+      <td>0.0031</td>
+    </tr>
+    <tr>
+      <th>X6</th>
+      <td>-0.0154</td>
+      <td>0.0169</td>
+      <td>-0.9122</td>
+      <td>0.3641</td>
+      <td>-0.0489</td>
+      <td>0.0181</td>
+    </tr>
+    <tr>
+      <th>X7</th>
+      <td>-0.0005</td>
+      <td>0.0014</td>
+      <td>-0.3545</td>
+      <td>0.7238</td>
+      <td>-0.0034</td>
+      <td>0.0023</td>
+    </tr>
+    <tr>
+      <th>X8</th>
+      <td>-0.0026</td>
+      <td>0.0051</td>
+      <td>-0.5135</td>
+      <td>0.6089</td>
+      <td>-0.0128</td>
+      <td>0.0076</td>
+    </tr>
+    <tr>
+      <th>X9</th>
+      <td>-0.0266</td>
+      <td>0.0204</td>
+      <td>-1.3040</td>
+      <td>0.1956</td>
+      <td>-0.0670</td>
+      <td>0.0139</td>
+    </tr>
+    <tr>
+      <th>X10</th>
+      <td>-0.0010</td>
+      <td>0.0030</td>
+      <td>-0.3303</td>
+      <td>0.7420</td>
+      <td>-0.0069</td>
+      <td>0.0049</td>
+    </tr>
+  </tbody>
+</table>
+<p class="caption">Table 6. Full model with all ten predictors.</p>
+<p><b>Multicollinearity.</b> All variance inflation factors are small (largest: X7,
+VIF = 2.91; Table 7), far below the usual warning level of 10. The only notable overlap
+is between experience and age: age is significant on its own but not once experience is in the
+model, meaning age has no additional explanatory value beyond experience.</p>
+<table class="dataframe tbl">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>VIF</th>
+    </tr>
+    <tr>
+      <th>Variable</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>Experience (yrs)</th>
+      <td>2.90</td>
+    </tr>
+    <tr>
+      <th>Education (yrs)</th>
+      <td>1.07</td>
+    </tr>
+    <tr>
+      <th>Bonus eligible</th>
+      <td>1.13</td>
+    </tr>
+    <tr>
+      <th>Employees supervised</th>
+      <td>1.16</td>
+    </tr>
+    <tr>
+      <th>Corporate assets ($M)</th>
+      <td>1.12</td>
+    </tr>
+    <tr>
+      <th>Board member</th>
+      <td>1.23</td>
+    </tr>
+    <tr>
+      <th>Age (yrs)</th>
+      <td>2.91</td>
+    </tr>
+    <tr>
+      <th>Company profits ($M)</th>
+      <td>1.09</td>
+    </tr>
+    <tr>
+      <th>International resp.</th>
+      <td>1.06</td>
+    </tr>
+    <tr>
+      <th>Company sales ($M)</th>
+      <td>1.13</td>
+    </tr>
+  </tbody>
+</table>
+<p class="caption">Table 7. Variance inflation factors, full model.</p>
+<h3>2.4 Variable selection</h3>
+<p><b>Partial (nested) F-test.</b> To test whether the five non-significant predictors can be dropped
+together, H<sub>0</sub>: &beta;<sub>6</sub> = &beta;<sub>7</sub> = &beta;<sub>8</sub> = &beta;<sub>9</sub>
+= &beta;<sub>10</sub> = 0, we compare the full model with the reduced model containing X1, X2, X3, X4, X5:
+F = 0.526 on 5 and 89 df, p = 0.756. We do not reject H<sub>0</sub>;
+the five variables can be removed without a significant loss of fit. The reduced model has
+adjusted R&sup2; = 0.9164, slightly <i>higher</i> than the full model.</p>
+<p><b>All-subsets regression.</b> As a check that does not depend on the order of testing, we fit
+all 2<sup>10</sup> &minus; 1 = 1,023 possible first-order models. Figure 5 and Table 8 show the best
+model of each size. The highest adjusted R&sup2; occurs at 6 predictors, the smallest
+model with C<sub>p</sub> &le; p has 5 predictors, and BIC is minimized at 5
+predictors. C<sub>p</sub> and BIC both point to the same five variables (X1, X2, X3, X4, X5).
+The best 6-variable model (X1, X2, X3, X4, X5, X9) raises adjusted R&sup2; only from 0.9164 to 0.9170, so the simpler 5-variable model is preferred.</p>
+<img src="figures/fig5_salaries_best_subsets.png" style="width:6.5in">
+<p class="caption">Figure 5. Best-subsets criteria; the dotted line marks the 5-predictor model.</p>
+<table class="dataframe tbl">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Predictors</th>
+      <th>R2</th>
+      <th>Adj R2</th>
+      <th>Cp</th>
+      <th>BIC</th>
+    </tr>
+    <tr>
+      <th>k</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>1</th>
+      <td>X1</td>
+      <td>0.6190</td>
+      <td>0.6151</td>
+      <td>343.8566</td>
+      <td>-74.0574</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>X1, X3</td>
+      <td>0.7492</td>
+      <td>0.7440</td>
+      <td>195.5192</td>
+      <td>-111.2750</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>X1, X3, X4</td>
+      <td>0.8391</td>
+      <td>0.8341</td>
+      <td>93.7538</td>
+      <td>-151.0498</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>X1, X2, X3, X4</td>
+      <td>0.9075</td>
+      <td>0.9036</td>
+      <td>16.8128</td>
+      <td>-201.7790</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>X1, X2, X3, X4, X5</td>
+      <td>0.9206</td>
+      <td>0.9164</td>
+      <td>3.6279</td>
+      <td>-212.5080</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>X1, X2, X3, X4, X5, X9</td>
+      <td>0.9220</td>
+      <td>0.9170</td>
+      <td>4.0235</td>
+      <td>-209.6694</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>X1, X2, X3, X4, X5, X6, X9</td>
+      <td>0.9225</td>
+      <td>0.9166</td>
+      <td>5.4499</td>
+      <td>-205.7034</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>X1, X2, X3, X4, X5, X6, X8, X9</td>
+      <td>0.9227</td>
+      <td>0.9159</td>
+      <td>7.1956</td>
+      <td>-201.3830</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>X1, X2, X3, X4, X5, X6, X7, X8, X9</td>
+      <td>0.9228</td>
+      <td>0.9151</td>
+      <td>9.1091</td>
+      <td>-196.8748</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>X1, X2, X3, X4, X5, X6, X7, X8, X9, X10</td>
+      <td>0.9229</td>
+      <td>0.9142</td>
+      <td>11.0000</td>
+      <td>-192.3921</td>
+    </tr>
+  </tbody>
+</table>
+<p class="caption">Table 8. Best model of each size.</p>
+<h3>2.5 Refining the model: curvature and interaction</h3>
+<p><b>Curvature in experience.</b> Plotting the residuals of the 5-predictor model against each
+quantitative predictor (Figure 6) reveals an inverted-U pattern for experience: the first-order
+model under-predicts salaries for mid-career executives and over-predicts at both ends. Adding
+X1<sup>2</sup> is significant (partial F = 17.41, p &lt; 0.001); the negative coefficient
+means salary rises with experience at a <i>decreasing</i> rate.</p>
+<img src="figures/fig6_salaries_curvature.png" style="width:6.5in">
+<p class="caption">Figure 6. Residuals of the 5-predictor model with LOWESS smooth.</p>
+<p><b>Interactions with bonus eligibility.</b> It is natural to ask whether the payoff of experience,
+education, supervision or assets differs for bonus-eligible executives. Adding all four
+interactions X3&middot;X1, X3&middot;X2, X3&middot;X4 and X3&middot;X5 is jointly significant
+(F = 3.60, p = 0.009), but only X3&middot;X4
+is individually significant. After keeping it, the remaining three are not needed
+(F = 1.21, p = 0.309). Figure 7 illustrates the interaction: salaries rise faster
+with the number of employees supervised among bonus-eligible executives.</p>
+<img src="figures/fig7_salaries_interaction.png" style="width:5.4in">
+<p class="caption">Figure 7. Fitted lines from the final model for each bonus group.</p>
+<h3>2.6 Final model</h3>
+<p class="eq" style="font-size:10.5pt">ln(Salary)&#770; = 9.8618 + 0.04364&thinsp;X1 + 0.03094&thinsp;X2 + 0.11661&thinsp;X3 + 0.00033&thinsp;X4 + 0.00239&thinsp;X5 &minus; 0.00063&thinsp;X1<sup>2</sup> + 0.00030&thinsp;X3&middot;X4</p>
+<p>The final model is highly significant (F = 206.27, p &lt; 0.001) with
+R&sup2; = 0.9401, adjusted R&sup2; = 0.9355 and residual standard error
+s<sub>e</sub> = 0.0660 on the log scale. Every term is significant at the 5% level using both the usual and the heteroskedasticity-robust (HC3) standard errors (Table 9).</p>
+<table class="dataframe tbl">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Estimate</th>
+      <th>Std. Error</th>
+      <th>t value</th>
+      <th>Pr(&gt;|t|)</th>
+      <th>95% CI low</th>
+      <th>95% CI high</th>
+      <th>HC3 p-value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>Intercept</th>
+      <td>9.86182</td>
+      <td>0.09703</td>
+      <td>101.63415</td>
+      <td>0.00000</td>
+      <td>9.66910</td>
+      <td>10.05453</td>
+      <td>0.00000</td>
+    </tr>
+    <tr>
+      <th>X1</th>
+      <td>0.04364</td>
+      <td>0.00376</td>
+      <td>11.60383</td>
+      <td>0.00000</td>
+      <td>0.03617</td>
+      <td>0.05111</td>
+      <td>0.00000</td>
+    </tr>
+    <tr>
+      <th>X2</th>
+      <td>0.03094</td>
+      <td>0.00295</td>
+      <td>10.48748</td>
+      <td>0.00000</td>
+      <td>0.02508</td>
+      <td>0.03680</td>
+      <td>0.00000</td>
+    </tr>
+    <tr>
+      <th>X3</th>
+      <td>0.11661</td>
+      <td>0.03696</td>
+      <td>3.15523</td>
+      <td>0.00217</td>
+      <td>0.04321</td>
+      <td>0.19001</td>
+      <td>0.01203</td>
+    </tr>
+    <tr>
+      <th>X4</th>
+      <td>0.00033</td>
+      <td>0.00008</td>
+      <td>4.15180</td>
+      <td>0.00007</td>
+      <td>0.00017</td>
+      <td>0.00048</td>
+      <td>0.00138</td>
+    </tr>
+    <tr>
+      <th>X5</th>
+      <td>0.00239</td>
+      <td>0.00044</td>
+      <td>5.38614</td>
+      <td>0.00000</td>
+      <td>0.00151</td>
+      <td>0.00327</td>
+      <td>0.00001</td>
+    </tr>
+    <tr>
+      <th>I(X1 ** 2)</th>
+      <td>-0.00063</td>
+      <td>0.00014</td>
+      <td>-4.58792</td>
+      <td>0.00001</td>
+      <td>-0.00091</td>
+      <td>-0.00036</td>
+      <td>0.00009</td>
+    </tr>
+    <tr>
+      <th>X3:X4</th>
+      <td>0.00030</td>
+      <td>0.00009</td>
+      <td>3.26864</td>
+      <td>0.00152</td>
+      <td>0.00012</td>
+      <td>0.00049</td>
+      <td>0.00728</td>
+    </tr>
+  </tbody>
+</table>
+<p class="caption">Table 9. Final model coefficients, with HC3 robust p-values.</p>
+<p><b>Interpretation.</b> Because the response is ln(Salary), a coefficient b corresponds to a
+100(e<sup>b</sup> &minus; 1)% change in (median) salary for a one-unit increase, holding the other
+variables constant.</p>
+<div class="box">
+<p>&bull; <b>Education:</b> each additional year is associated with 3.14% higher salary.<br>
+&bull; <b>Corporate assets:</b> each additional $10 million is associated with 2.42% higher salary.<br>
+&bull; <b>Experience:</b> the effect diminishes over a career &mdash; one more year adds about
+3.8% at 5 years, 2.8% at 13 years and 1.8% at 20 years. The
+curve would peak near 34 years, beyond the observed maximum of 26, so salary
+never actually declines within the data.<br>
+&bull; <b>Employees supervised &times; bonus:</b> 100 more employees supervised is associated with
+3.3% higher salary for executives who are not bonus eligible and
+6.5% for those who are. Equivalently, the bonus-eligibility premium
+grows with responsibility: about 15.8% for an executive supervising 100 employees,
+24.5% at the average of 340, and
+34.7% at 600.</p>
+</div>
+<table class="dataframe tbl">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Coefficient</th>
+      <th>Effect on median salary (%)</th>
+      <th>95% CI low (%)</th>
+      <th>95% CI high (%)</th>
+    </tr>
+    <tr>
+      <th>Term</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>X2: +1 year of education</th>
+      <td>0.031</td>
+      <td>3.142</td>
+      <td>2.539</td>
+      <td>3.748</td>
+    </tr>
+    <tr>
+      <th>X5: +$10M corporate assets</th>
+      <td>0.002</td>
+      <td>2.420</td>
+      <td>1.521</td>
+      <td>3.327</td>
+    </tr>
+    <tr>
+      <th>X4: +100 employees supervised (not bonus eligible)</th>
+      <td>0.000</td>
+      <td>3.313</td>
+      <td>1.715</td>
+      <td>4.936</td>
+    </tr>
+  </tbody>
+</table>
+<p class="caption">Table 10. Percentage effects with 95% confidence intervals.</p>
+<h3>2.7 Checking the assumptions of the final model</h3>
+<img src="figures/fig8_salaries_diagnostics.png" style="width:6.5in">
+<p class="caption">Figure 8. Residual diagnostics, final model.</p>
+<p><b>Linearity.</b> After adding X1<sup>2</sup> the residuals vs fitted values (Figure 8a) show no
+remaining curvature. <b>Normality.</b> The Q-Q plot and histogram (8b, 8c) are consistent with
+normal errors (Shapiro&ndash;Wilk W = 0.9884, p = 0.535).
+<b>Independence.</b> The data are a cross-sectional sample of different executives;
+Durbin&ndash;Watson d = 1.827 is close to 2 and Figure 8e shows no pattern.
+<b>Constant variance.</b> The Breusch&ndash;Pagan test is significant (LM = 19.33,
+p = 0.007). The source is bonus eligibility: the residual standard deviation is
+0.082 for non-eligible executives versus 0.052 for eligible ones
+(Figure 8d; BP test on X3 alone, p &lt; 0.001). Salaries of executives without a bonus
+are therefore less predictable. Since this could make the usual standard errors unreliable, we
+recomputed them with HC3 robust standard errors: every term remains significant at the 5% level, so the conclusions are unchanged.
+The point estimates and predictions are still unbiased.</p>
+<p><b>Unusual observations.</b> Only executive 40 has a studentized residual beyond &plusmn;2.5 (-2.74), which is not unusual in a sample of 100.
+3 executives have leverage above 2(k+1)/n = 0.16. The largest Cook's
+distance is 0.124 (executive 40), far below 1. Refitting without that
+executive changes no coefficient by more than 9% and no conclusion, so all
+observations were retained.</p>
+<h3>2.8 Predictive performance</h3>
+<p>Because the model was chosen using the same data, we checked out-of-sample accuracy with
+10-fold cross-validation repeated 20 times (Table 11). The final model has the lowest
+cross-validated root mean squared error, followed by the 5-predictor model; the full 10-predictor
+model predicts worst, confirming that the extra five variables mostly add noise.</p>
+<table class="dataframe tbl">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Predictors (p)</th>
+      <th>Adj R2</th>
+      <th>AIC</th>
+      <th>CV RMSE (log scale)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>Full (10 predictors)</th>
+      <td>10</td>
+      <td>0.9142</td>
+      <td>-221.0490</td>
+      <td>0.0810</td>
+    </tr>
+    <tr>
+      <th>Reduced (5 predictors)</th>
+      <td>5</td>
+      <td>0.9164</td>
+      <td>-228.1391</td>
+      <td>0.0779</td>
+    </tr>
+    <tr>
+      <th>Final (5 + X1² + interaction)</th>
+      <td>7</td>
+      <td>0.9355</td>
+      <td>-252.2864</td>
+      <td>0.0697</td>
+    </tr>
+  </tbody>
+</table>
+<p class="caption">Table 11. Model comparison (CV RMSE: lower is better).</p>
+<p><b>Example.</b> For a bonus-eligible executive with 10 years of experience, 16 years of education,
+300 employees supervised and $175 million in corporate assets, the final model predicts
+ln(Salary) = 11.4532, i.e. a typical (median) salary of about <b>$94,202</b>.
+The 95% confidence interval for the median salary of all such executives is
+$92,244 to $96,201; the 95% prediction interval for one such executive is
+$82,497 to $107,567 (salary units assumed to be dollars; intervals are
+obtained by exponentiating the log-scale limits).</p>
+<h3>2.9 Conclusions for Study 2</h3>
+<p>Executive salary at this firm is driven by experience, education, bonus eligibility, the number of
+employees supervised and corporate assets. Experience has the largest effect but with diminishing
+returns, and the reward for supervising more people is larger for bonus-eligible executives. Board
+membership, age (beyond experience), company profits, international responsibility and total sales
+are not associated with salary once these factors are controlled for. The final model explains about
+94% of the variation in log salary and predicts better than the full model.
+Limitations: the data come from one firm and are observational, so effects are associations, not
+causal; the model was selected and evaluated on the same 100 executives (cross-validation reduces but
+does not remove this optimism); and salaries of non-bonus-eligible executives are more variable than
+the model's single error variance assumes.</p><h2>3. Overall Conclusions</h2>
+<p>Both studies show the value of a complete regression analysis rather than a single fitted
+equation. In Study 1, one predictor explains 92% of fire damage and all
+diagnostic checks support the model. In Study 2, formal tests (partial F), model-selection criteria
+(adjusted R&sup2;, C<sub>p</sub>, BIC), residual analysis and cross-validation lead consistently to a
+parsimonious model with five predictors, a quadratic term and one interaction. In both cases the
+results describe associations in observational data and should be applied only within the range of
+the observed predictors.</p><div class="appendix"><h2>Appendix: Relevant Computer Output</h2>
+<h3>A.1 Study 1 &mdash; OLS summary</h3><pre>                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:                 DAMAGE   R-squared:                       0.923
+Model:                            OLS   Adj. R-squared:                  0.918
+Method:                 Least Squares   F-statistic:                     156.9
+Date:                Sat, 07 Nov 2026   Prob (F-statistic):           1.25e-08
+Time:                        18:48:04   Log-Likelihood:                -32.811
+No. Observations:                  15   AIC:                             69.62
+Df Residuals:                      13   BIC:                             71.04
+Df Model:                           1                                         
+Covariance Type:            nonrobust                                         
+==============================================================================
+                 coef    std err          t      P>|t|      [0.025      0.975]
+------------------------------------------------------------------------------
+Intercept     10.2779      1.420      7.237      0.000       7.210      13.346
+DISTANCE       4.9193      0.393     12.525      0.000       4.071       5.768
+==============================================================================
+Omnibus:                        2.551   Durbin-Watson:                   1.318
+Prob(Omnibus):                  0.279   Jarque-Bera (JB):                1.047
+Skew:                          -0.003   Prob(JB):                        0.592
+Kurtosis:                       1.706   Cond. No.                         9.13
+==============================================================================
+
+Notes:
+[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.</pre>
+<h3>A.2 Study 2 &mdash; full model</h3><pre>                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:                      Y   R-squared:                       0.923
+Model:                            OLS   Adj. R-squared:                  0.914
+Method:                 Least Squares   F-statistic:                     106.5
+Date:                Sat, 07 Nov 2026   Prob (F-statistic):           4.41e-45
+Time:                        18:48:04   Log-Likelihood:                 121.52
+No. Observations:                 100   AIC:                            -221.0
+Df Residuals:                      89   BIC:                            -192.4
+Df Model:                          10                                         
+Covariance Type:            nonrobust                                         
+==============================================================================
+                 coef    std err          t      P>|t|      [0.025      0.975]
+------------------------------------------------------------------------------
+Intercept     10.0219      0.148     67.692      0.000       9.728      10.316
+X1             0.0279      0.002     15.745      0.000       0.024       0.031
+X2             0.0290      0.003      8.475      0.000       0.022       0.036
+X3             0.2243      0.017     13.135      0.000       0.190       0.258
+X4             0.0005   4.92e-05     10.443      0.000       0.000       0.001
+X5             0.0020      0.001      3.901      0.000       0.001       0.003
+X6            -0.0154      0.017     -0.912      0.364      -0.049       0.018
+X7            -0.0005      0.001     -0.355      0.724      -0.003       0.002
+X8            -0.0026      0.005     -0.513      0.609      -0.013       0.008
+X9            -0.0266      0.020     -1.304      0.196      -0.067       0.014
+X10           -0.0010      0.003     -0.330      0.742      -0.007       0.005
+==============================================================================
+Omnibus:                        0.106   Durbin-Watson:                   2.121
+Prob(Omnibus):                  0.949   Jarque-Bera (JB):                0.212
+Skew:                           0.072   Prob(JB):                        0.899
+Kurtosis:                       2.826   Cond. No.                     8.07e+03
+==============================================================================
+
+Notes:
+[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+[2] The condition number is large, 8.07e+03. This might indicate that there are
+strong multicollinearity or other numerical problems.</pre>
+<h3>A.3 Study 2 &mdash; nested model F-tests</h3><pre>Reduced vs full (drop non-significant predictors)
+   df_resid       ssr  df_diff   ss_diff         F    Pr(>F)
+0      94.0  0.530414      0.0       NaN       NaN       NaN
+1      89.0  0.515202      5.0  0.015212  0.525583  0.756326
+
+Reduced vs reduced + X1^2
+   df_resid       ssr  df_diff  ss_diff          F    Pr(>F)
+0      94.0  0.530414      0.0      NaN        NaN       NaN
+1      93.0  0.446774      1.0  0.08364  17.410455  0.000068
+
+Quadratic vs quadratic + all X3 interactions
+   df_resid       ssr  df_diff   ss_diff         F    Pr(>F)
+0      93.0  0.446774      0.0       NaN       NaN       NaN
+1      89.0  0.384550      4.0  0.062224  3.600278  0.009092
+
+Final vs all X3 interactions
+   df_resid       ssr  df_diff   ss_diff         F    Pr(>F)
+0      92.0  0.400288      0.0       NaN       NaN       NaN
+1      89.0  0.384550      3.0  0.015738  1.214161  0.309299</pre>
+<h3>A.4 Study 2 &mdash; final model</h3><pre>                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:                      Y   R-squared:                       0.940
+Model:                            OLS   Adj. R-squared:                  0.936
+Method:                 Least Squares   F-statistic:                     206.3
+Date:                Sat, 07 Nov 2026   Prob (F-statistic):           2.35e-53
+Time:                        18:48:04   Log-Likelihood:                 134.14
+No. Observations:                 100   AIC:                            -252.3
+Df Residuals:                      92   BIC:                            -231.4
+Df Model:                           7                                         
+Covariance Type:            nonrobust                                         
+==============================================================================
+                 coef    std err          t      P>|t|      [0.025      0.975]
+------------------------------------------------------------------------------
+Intercept      9.8618      0.097    101.634      0.000       9.669      10.055
+X1             0.0436      0.004     11.604      0.000       0.036       0.051
+X2             0.0309      0.003     10.487      0.000       0.025       0.037
+X3             0.1166      0.037      3.155      0.002       0.043       0.190
+X4             0.0003   7.85e-05      4.152      0.000       0.000       0.000
+X5             0.0024      0.000      5.386      0.000       0.002       0.003
+I(X1 ** 2)    -0.0006      0.000     -4.588      0.000      -0.001      -0.000
+X3:X4          0.0003   9.24e-05      3.269      0.002       0.000       0.000
+==============================================================================
+Omnibus:                        0.388   Durbin-Watson:                   1.827
+Prob(Omnibus):                  0.824   Jarque-Bera (JB):                0.545
+Skew:                          -0.113   Prob(JB):                        0.762
+Kurtosis:                       2.717   Cond. No.                     7.82e+03
+==============================================================================
+
+Notes:
+[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+[2] The condition number is large, 7.82e+03. This might indicate that there are
+strong multicollinearity or other numerical problems.</pre>
+<h3>A.5 Study 2 &mdash; final model with HC3 robust standard errors</h3><pre>                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:                      Y   R-squared:                       0.940
+Model:                            OLS   Adj. R-squared:                  0.936
+Method:                 Least Squares   F-statistic:                     184.1
+Date:                Sat, 07 Nov 2026   Prob (F-statistic):           3.14e-51
+Time:                        18:48:04   Log-Likelihood:                 134.14
+No. Observations:                 100   AIC:                            -252.3
+Df Residuals:                      92   BIC:                            -231.4
+Df Model:                           7                                         
+Covariance Type:                  HC3                                         
+==============================================================================
+                 coef    std err          t      P>|t|      [0.025      0.975]
+------------------------------------------------------------------------------
+Intercept      9.8618      0.130     76.011      0.000       9.604      10.119
+X1             0.0436      0.004     10.115      0.000       0.035       0.052
+X2             0.0309      0.003      9.106      0.000       0.024       0.038
+X3             0.1166      0.046      2.562      0.012       0.026       0.207
+X4             0.0003   9.88e-05      3.300      0.001       0.000       0.001
+X5             0.0024      0.001      4.718      0.000       0.001       0.003
+I(X1 ** 2)    -0.0006      0.000     -4.090      0.000      -0.001      -0.000
+X3:X4          0.0003      0.000      2.745      0.007    8.35e-05       0.001
+==============================================================================
+Omnibus:                        0.388   Durbin-Watson:                   1.827
+Prob(Omnibus):                  0.824   Jarque-Bera (JB):                0.545
+Skew:                          -0.113   Prob(JB):                        0.762
+Kurtosis:                       2.717   Cond. No.                     7.82e+03
+==============================================================================
+
+Notes:
+[1] Standard Errors are heteroscedasticity robust (HC3)
+[2] The condition number is large, 7.82e+03. This might indicate that there are
+strong multicollinearity or other numerical problems.</pre>
+</div></body></html>

@@ -1,0 +1,19 @@
+Reduced vs full (drop non-significant predictors)
+   df_resid       ssr  df_diff   ss_diff         F    Pr(>F)
+0      94.0  0.530414      0.0       NaN       NaN       NaN
+1      89.0  0.515202      5.0  0.015212  0.525583  0.756326
+
+Reduced vs reduced + X1^2
+   df_resid       ssr  df_diff  ss_diff          F    Pr(>F)
+0      94.0  0.530414      0.0      NaN        NaN       NaN
+1      93.0  0.446774      1.0  0.08364  17.410455  0.000068
+
+Quadratic vs quadratic + all X3 interactions
+   df_resid       ssr  df_diff   ss_diff         F    Pr(>F)
+0      93.0  0.446774      0.0       NaN       NaN       NaN
+1      89.0  0.384550      4.0  0.062224  3.600278  0.009092
+
+Final vs all X3 interactions
+   df_resid       ssr  df_diff   ss_diff         F    Pr(>F)
+0      92.0  0.400288      0.0       NaN       NaN       NaN
+1      89.0  0.384550      3.0  0.015738  1.214161  0.309299

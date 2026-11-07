@@ -1,0 +1,25 @@
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:                 DAMAGE   R-squared:                       0.923
+Model:                            OLS   Adj. R-squared:                  0.918
+Method:                 Least Squares   F-statistic:                     125.0
+Date:                Sat, 07 Nov 2026   Prob (F-statistic):           4.85e-08
+Time:                        18:37:33   Log-Likelihood:                -32.811
+No. Observations:                  15   AIC:                             69.62
+Df Residuals:                      13   BIC:                             71.04
+Df Model:                           1                                         
+Covariance Type:                  HC3                                         
+==============================================================================
+                 coef    std err          t      P>|t|      [0.025      0.975]
+------------------------------------------------------------------------------
+Intercept     10.2779      1.451      7.083      0.000       7.143      13.413
+DISTANCE       4.9193      0.440     11.182      0.000       3.969       5.870
+==============================================================================
+Omnibus:                        2.551   Durbin-Watson:                   1.318
+Prob(Omnibus):                  0.279   Jarque-Bera (JB):                1.047
+Skew:                          -0.003   Prob(JB):                        0.592
+Kurtosis:                       1.706   Cond. No.                         9.13
+==============================================================================
+
+Notes:
+[1] Standard Errors are heteroscedasticity robust (HC3)

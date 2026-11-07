@@ -1,0 +1,2 @@
+[Study 1] damage = 10.2779 + 4.9193 distance, R2 = 0.9235, slope p < 0.001
+[Study 2] final: Y ~ X1 + X2 + X3 + X4 + X5 + I(X1**2) + X3:X4  adjR2 = 0.9355, best CV = Final (5 + X1² + interaction)
